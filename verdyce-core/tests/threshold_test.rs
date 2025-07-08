@@ -6,7 +6,7 @@ fn test_linear_threshold() {
     let t = 10;
     let total = 100;
     let thres = threshold_calc(&model, t, total);
-    let expected = (0.5 * t as f64 + 0.1).min(1.0).max(0.35);
+    let expected = (0.5 * t as f64 + 0.1).min(0.9).max(0.35);
     assert!((thres - expected).abs() < 0.001)
 }
 
@@ -16,7 +16,7 @@ fn test_exponential_threshold() {
     let t = 10;
     let total = 100;
     let thres = threshold_calc(&model, t, total);
-    let expected = (0.1 + (1.0 - (-0.5 * t as f64).exp())).min(1.0).max(0.35);
+    let expected = (0.1 + (1.0 - (-0.5 * t as f64).exp())).min(0.9).max(0.35);
     assert!((thres - expected).abs() < 0.001)
 }
 

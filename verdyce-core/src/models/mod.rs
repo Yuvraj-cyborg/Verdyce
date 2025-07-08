@@ -1,2 +1,2 @@
-mod proposal;
-mod vote;
+pub mod proposal;
+pub mod vote;
