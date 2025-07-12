@@ -15,7 +15,7 @@ pub enum ProposalStatus {
     Expired,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Proposal {
     pub id: Uuid,
     pub title: String,

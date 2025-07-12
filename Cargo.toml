@@ -3,4 +3,4 @@ resolver = "3"
 members = [
     "verdyce-core",
     "verdyce-cli"
-]
+, "verdyce-chain"]

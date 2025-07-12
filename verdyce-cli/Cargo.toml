@@ -4,3 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+clap = { version = "4.5", features = ["derive"] }
+chrono = "0.4"
+uuid = { version = "1", features = ["v4"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+verdyce-core = { path = "../verdyce-core" }
+redis = { version = "0.23", features = ["tokio-comp", "tokio-native-tls-comp"] }
+dotenvy = "0.15"
+tokio = { version = "1", features = ["full"] }

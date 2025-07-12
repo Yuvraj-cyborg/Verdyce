@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WindowState {
@@ -9,7 +10,7 @@ pub enum WindowState {
     Expired,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VotingWindow {
     pub start_time: DateTime<Utc>,
     pub duration: u64,     
