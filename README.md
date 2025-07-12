@@ -100,17 +100,6 @@ Manually evaluates the proposal:
 - If `approval_ratio ≥ threshold`, mark as **Accepted**
 - If expired without threshold, mark as **Rejected**
 
-### ⏱️ Maybe Extend Voting
-
-```bash
-verdyce maybe-extend \
-  --extension-seconds 30 \
-  --threshold-proximity 0.9 \
-  --time-proximity 0.8
-```
-
-If a proposal is close to threshold and near expiration, extend its voting window.
-
 ---
 
 ## 🧪 Running the Project
@@ -158,7 +147,7 @@ Each proposal contains:
 - **Threshold model** for approval requirements
 - **List of votes** (each with timestamp, validator, weight)
 
-### Engine Responsibilities
+### Engine Tasks 
 The Engine:
 - Adds proposals to the system
 - Accepts & stores votes
@@ -178,26 +167,6 @@ The Engine:
 | Linear | `threshold = t * rate + start` | Steady increase |
 | Exponential | `threshold = base + (1 - e^(-rate * t))` | Quick early rise |
 | Sigmoid | S-curve progression | Smooth adaptive ramping |
-
----
-
-## 🚀 Future Enhancements
-
-- [ ] Web-based dashboard for proposal management
-- [ ] Integration with blockchain networks (verdyce-chain)
-- [ ] Advanced reputation scoring
-- [ ] Multi-signature proposal creation
-- [ ] Delegation and proxy voting
-- [ ] Analytics and reporting features
-- [ ] Configurable decay/threshold models via CLI
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
 
 ## 🤝 Contributing
 
