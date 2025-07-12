@@ -1,6 +1,6 @@
 # 🗳️ Time-Decay Threshold Consensus System
 
-![Architecture Diagram](./architecture.png)
+![Architecture Diagram](./archi-vote.png)
 
 A modular Rust-based consensus engine designed for decentralized voting using **time-weighted votes** and **escalating decision thresholds**.
 
