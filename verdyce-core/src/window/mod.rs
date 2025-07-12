@@ -10,12 +10,19 @@ pub enum WindowState {
     Expired,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum VotingPhase {
+    Early,
+    Mid,
+    Late,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VotingWindow {
     pub start_time: DateTime<Utc>,
-    pub duration: u64,     
-    pub grace_period: u64, 
-    pub extended_by: u64
+    pub duration: u64,
+    pub grace_period: u64,
+    pub extended_by: u64,
 }
 
 impl VotingWindow {
@@ -58,15 +65,16 @@ impl VotingWindow {
         self.extended_by += seconds;
     }
 
-    pub fn phase(&self, now: DateTime<Utc>) -> u8 {
+    pub fn phase(&self, now: DateTime<Utc>) -> VotingPhase {
         let elapsed = self.elapsed(now);
         let total = self.total_duration();
+
         if elapsed <= total / 3 {
-            1
+            VotingPhase::Early
         } else if elapsed <= (2 * total) / 3 {
-            2
+            VotingPhase::Mid
         } else {
-            3
+            VotingPhase::Late
         }
     }
 }
