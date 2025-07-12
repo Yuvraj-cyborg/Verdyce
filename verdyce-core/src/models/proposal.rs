@@ -29,7 +29,13 @@ pub struct Proposal {
 }
 
 impl Proposal {
-    pub fn new(title: String, description: String, duration: u64, decay_model: DecayModel, threshold_model: ThresholdModel) -> Self {
+    pub fn new(
+        title: String,
+        description: String,
+        duration: u64,
+        decay_model: DecayModel,
+        threshold_model: ThresholdModel,
+    ) -> Self {
         let now = Utc::now();
         Self {
             id: Uuid::new_v4(),
@@ -53,21 +59,21 @@ impl Proposal {
             return;
         }
 
-        let elapsed_time = self.voting_window.elapsed(now);
-        let total_duration = self.voting_window.total_duration();
-        let grace_cutoff = total_duration + self.voting_window.grace_period;
+        let elapsed = self.voting_window.elapsed(now);
+        let total = self.voting_window.total_duration();
+        let grace_cutoff = total + self.voting_window.grace_period;
 
-        if elapsed_time >= grace_cutoff {
+        if elapsed >= grace_cutoff {
             self.status = ProposalStatus::Expired;
             return;
         }
 
-        let threshold = threshold_calc(&self.threshold_model, elapsed_time, total_duration);
-        let approval_ratio = self.current_approval_ratio(now);
+        let threshold = threshold_calc(&self.threshold_model, elapsed, total);
+        let approval_ratio = self.current_approval_ratio();
 
-        if elapsed_time < total_duration && approval_ratio >= threshold {
+        if elapsed < total && approval_ratio >= threshold {
             self.status = ProposalStatus::Accepted;
-        } else if elapsed_time >= total_duration {
+        } else if elapsed >= total {
             self.status = ProposalStatus::Rejected;
         }
     }
@@ -86,7 +92,7 @@ impl Proposal {
         let elapsed = self.voting_window.elapsed(now);
         let total = self.voting_window.total_duration();
         let threshold = threshold_calc(&self.threshold_model, elapsed, total);
-        let approval_ratio = self.current_approval_ratio(now);
+        let approval_ratio = self.current_approval_ratio();
 
         let near_threshold = approval_ratio >= threshold * threshold_proximity;
         let near_expiry = elapsed as f64 >= total as f64 * time_proximity;
@@ -96,17 +102,18 @@ impl Proposal {
         }
     }
 
-    pub fn current_approval_ratio(&self, now: DateTime<Utc>) -> f64 {
+    pub fn current_approval_ratio(&self) -> f64 {
         let mut yes_weight = 0.0;
         let mut total_weight = 0.0;
 
         for vote in &self.votes {
             let weight = calculate_vote_weight(
                 vote,
-                now,
+                self.voting_window.start_time,
                 self.voting_window.total_duration(),
                 &self.decay_model,
             );
+
             match vote.choice {
                 VoteChoice::Yes => {
                     yes_weight += weight;

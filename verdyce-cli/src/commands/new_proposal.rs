@@ -9,7 +9,7 @@ pub async fn new_proposal(title: &str, description: &str, duration_secs: u64) {
         description.to_string(),
         duration_secs,
         DecayModel::Exponential(0.1),
-        ThresholdModel::Linear(0.0, 0.5),
+        ThresholdModel::Linear(0.51, 0.65),
     );
 
     let key = format!("proposal:{}", proposal.id);

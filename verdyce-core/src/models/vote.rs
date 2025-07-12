@@ -18,8 +18,8 @@ pub struct Vote {
     pub reason: Option<String>
 }
 
-pub fn calculate_vote_weight(vote: &Vote, now: DateTime<Utc>, total_time: u64, decay_model: &DecayModel) -> f64 {
-    let time_elapsed = (now - vote.timestamp).num_seconds().max(0) as u64;
+pub fn calculate_vote_weight(vote: &Vote, proposal_start: DateTime<Utc>, total_time: u64, decay_model: &DecayModel) -> f64 {
+    let time_elapsed = (vote.timestamp - proposal_start).num_seconds().max(0) as u64;
     let base_weight = weight_calc(decay_model, time_elapsed, total_time);
     
     // Revision penalty: weight / (1 + revisions)^2
