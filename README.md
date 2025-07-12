@@ -1,166 +1,203 @@
-# 🗳️ Time-Decay Threshold Consensus System
+# 🗳️ Verdyce — Time-Decay Threshold Consensus Engine
 
 ![Architecture Diagram](./archi-vote.png)
 
-A modular Rust-based consensus engine designed for decentralized voting using **time-weighted votes** and **escalating decision thresholds**.
+Verdyce is a modular Rust-based system for decentralized voting and governance, built around time-decaying vote weights and escalating approval thresholds. It supports rich configuration, transparent auditing, and CLI interaction backed by Redis.
 
-This system is ideal for scenarios requiring early-vote preference, strategic participation incentives, and robust fault-tolerant governance — like validator-based blockchains, DAOs, or decentralized proposals.
+Ideal for validator governance, DAOs, or decentralized committees that need time-sensitive and fault-tolerant consensus.
 
 ---
 
-## 📜 Features
+## 🚀 What Makes Verdyce Unique?
 
-### ✅ Time-Weighted Voting
-- Vote weight **decays** over time to reward early participation.
-- Configurable decay models: `Exponential`, `Linear`, `Stepped`.
-- Penalties for vote **revisions** to discourage flip-flopping.
+### 🕓 Time-Decay Voting
+- Vote weight decreases as time progresses
+- Encourages early participation
+- Multiple decay models:
+  - **Linear** - Steady decline over time
+  - **Exponential(rate)** - Rapid early decline
+  - **Stepped** - Discrete phase-based weights
 
-### 📈 Dynamic Thresholds
-- Thresholds **start low** and increase over time to promote early resolution.
-- Supports `Linear`, `Exponential`, and `Sigmoid` threshold models.
-- Ceiling/floor bounds for safety (e.g., min 35%, max 90%).
+### 📈 Threshold Escalation
+- Approval thresholds increase over time
+- Supports multiple models:
+  - **Linear(rate, start)** - Steady increase
+  - **Exponential(rate, base)** - Rapid early increase
+  - **Sigmoid(rate, floor)** - S-curve progression
+- Ensures quick convergence early, higher scrutiny late
 
 ### 🪟 Smart Voting Windows
-- Voting windows with:
-  - Grace periods
-  - Automatic extensions near consensus
-  - Voting phases (early/mid/late)
-- Window states: `Open`, `Extended`, `GracePeriod`, `Expired`.
+- Fixed duration + configurable grace period
+- Auto-extension if:
+  - Nearing threshold
+  - Nearing time expiry
+- Phases: Early, Mid, Late (used for future features)
 
-### 🎛️ Multi-Phase Architecture (Optional Extension)
-- Phase 1: Low threshold, high weight
-- Phase 2: Medium threshold/weight
-- Phase 3: High threshold, low weight
-
-### 🧮 Core Modules
-| Module | Responsibility |
-|--------|----------------|
-| `vote.rs` | Vote definition, weight calculation with decay & revision |
-| `proposal.rs` | Proposal lifecycle, evaluation logic |
-| `window.rs` | Voting window timing, extension, phase classification |
-| `threshold.rs` | Threshold escalation strategies |
-| `engine.rs` | System coordinator: vote casting, evaluation, extension |
+### 🔧 CLI Tool with Redis
+- Full proposal lifecycle management via CLI
+- CLI state is stored in Redis for persistence and testability
+- All actions (propose, vote, evaluate) are exposed via commands
 
 ---
 
-## 🔧 CLI Usage (Coming Soon)
+## 🧱 Project Structure
 
-A command-line interface to interact with proposals and cast votes.
-
-### 🚀 Planned Commands
-
-```bash
-# Create a new proposal
-vote-cli new --title "Change Param X" --desc "Proposal to update X" --duration 300 \
-    --decay Exponential:0.1 \
-    --threshold Linear:0.01,0.5
-
-# Cast a vote on a proposal
-vote-cli cast --proposal-id <UUID> --choice Yes --validator-id <UUID>
-
-# Evaluate all proposals
-vote-cli evaluate-all
-
-# Extend voting windows where applicable
-vote-cli extend-all
-
-# Check system status
-vote-cli status
+```
+verdyce/
+├── verdyce-core/         # Consensus logic: votes, proposals, decay, etc.
+│   ├── decay/            # Time-decay models
+│   ├── threshold/        # Threshold progression functions
+│   ├── window/           # Voting window state & timing
+│   ├── models/           # Proposal + Vote structs & logic
+│   ├── engine.rs         # Coordinator: evaluates & extends proposals
+│   ├── lib.rs            # Core entrypoint for engine integration
+│   └── tests/            # Unit tests for all modules
+├── verdyce-cli/          # Command-line interface
+│   ├── commands/         # `vote`, `new-proposal`, `evaluate`, etc.
+│   ├── redis.rs          # Redis layer for state persistence
+│   └── main.rs           # CLI entrypoint
+├── verdyce-chain/        # Blockchain integration (future)
+├── README.md             # You're reading it :)
+└── Cargo.toml            # Workspace configuration
 ```
 
 ---
 
-## 🛠️ Getting Started
+## 🔧 CLI Usage
 
-### 1. 🧱 Build the Project
+All CLI commands use `verdyce` as the entrypoint binary.
+
+### 🆕 Create a New Proposal
+
 ```bash
-cargo build
+verdyce new-proposal \
+  --title "Test Proposal" \
+  --description "Description of what this proposal is for" \
+  --duration 120
 ```
 
-### 2. ✅ Run the Tests
+- `--duration` is in seconds
+- Default decay/threshold models are currently pre-configured
+
+### ✅ Cast a Vote
+
+```bash
+verdyce vote \
+  --proposal-id <PROPOSAL_UUID> \
+  --validator-id <VALIDATOR_UUID> \
+  --choice yes
+```
+
+- `--choice` must be one of: `yes`, `no`, `abstain`
+
+### 📊 Evaluate a Proposal
+
+```bash
+verdyce evaluate --id <PROPOSAL_UUID>
+```
+
+Manually evaluates the proposal:
+- If `approval_ratio ≥ threshold`, mark as **Accepted**
+- If expired without threshold, mark as **Rejected**
+
+### ⏱️ Maybe Extend Voting
+
+```bash
+verdyce maybe-extend \
+  --extension-seconds 30 \
+  --threshold-proximity 0.9 \
+  --time-proximity 0.8
+```
+
+If a proposal is close to threshold and near expiration, extend its voting window.
+
+---
+
+## 🧪 Running the Project
+
+### Prerequisites
+- **Rust** (stable toolchain)
+- **Redis** (running locally or in Docker)
+
+### 🧱 Build
+
+```bash
+cargo build --release
+```
+
+### ✅ Run All Tests
+
 ```bash
 cargo test
 ```
 
-### 3. 🔬 Example Evaluation
-You can simulate proposal evaluation with fake timestamps:
+### 🚀 Redis Setup
 
-```rust
-use chrono::Utc;
-engine.evaluate_all(Utc::now());
+Start Redis locally:
+
+```bash
+redis-server
 ```
 
----
+Or with Docker:
 
-## 🧠 Vote Weight Decay Explained
+```bash
+docker run -p 6379:6379 redis
+```
 
-| Model | Description | Example |
-|-------|-------------|---------|
-| Linear | Weight drops linearly from 1.0 → 0.1 | 50% time = 0.55 |
-| Exponential | Drops sharply early on | 10% time = ~0.9, 90% = ~0.1 |
-| Stepped | Discrete weight levels across phases | Phase 1 = 1.0, Phase 3 = 0.1 |
+Make sure the Redis instance is running on `localhost:6379`, or update the CLI's config to point to a different host/port.
 
 ---
 
-## 📊 Threshold Progression Models
+## 📐 Architecture Summary
 
+### Proposal Components
+Each proposal contains:
+- **Voting window** with state, duration, phase
+- **Decay model** for vote weight calculation
+- **Threshold model** for approval requirements
+- **List of votes** (each with timestamp, validator, weight)
+
+### Engine Responsibilities
+The Engine:
+- Adds proposals to the system
+- Accepts & stores votes
+- Evaluates votes against thresholds
+- Extends windows intelligently if needed
+
+### Vote Weight Calculation
+| Model | Description | Behavior |
+|-------|-------------|----------|
+| Linear | Weight drops linearly from 1.0 → 0.1 | Steady decline |
+| Exponential | Drops sharply early on | Front-loaded decay |
+| Stepped | Discrete weight levels across phases | Phase-based weights |
+
+### Threshold Progression
 | Model | Formula | Notes |
 |-------|---------|-------|
-| Linear | threshold = t * r + s | Ramps from base to cap |
-| Exponential | threshold = s + (1 - e^(-r * t)) | Quick early rise |
-| Sigmoid | Smooth non-linear curve | Good for adaptive ramping |
+| Linear | `threshold = t * rate + start` | Steady increase |
+| Exponential | `threshold = base + (1 - e^(-rate * t))` | Quick early rise |
+| Sigmoid | S-curve progression | Smooth adaptive ramping |
 
 ---
 
-## 🧱 Architecture Overview
+## 🚀 Future Enhancements
 
-All proposals are managed via the `Engine` struct.
-
-Evaluation is done by calculating:
-- **Approval ratio**: `yes_weight / total_weight`
-- **Threshold**: via time-progression function
-
-Proposals move from `Pending → Accepted/Rejected/Expired`
-
----
-
-## 📂 Project Structure
-
-```
-src/
-├── main.rs          # (optional CLI binary)
-├── engine.rs        # Proposal coordinator
-├── models/
-│   ├── proposal.rs  # Proposal definition and evaluation logic
-│   ├── vote.rs      # Vote structure and weighted evaluation
-├── decay/
-│   └── mod.rs       # Decay model logic
-├── threshold/
-│   └── mod.rs       # Threshold progression engine
-├── window/
-│   └── mod.rs       # VotingWindow logic, state & phase transitions
-├── reputation/
-│   └── mod.rs       # Reputation system (future)
-```
+- [ ] Web-based dashboard for proposal management
+- [ ] Integration with blockchain networks (verdyce-chain)
+- [ ] Advanced reputation scoring
+- [ ] Multi-signature proposal creation
+- [ ] Delegation and proxy voting
+- [ ] Analytics and reporting features
+- [ ] Configurable decay/threshold models via CLI
 
 ---
 
-## ⚙️ Configuration Examples
+## 📄 License
 
-You can plug in different configurations at runtime:
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-```rust
-use verdyce_core::models::*;
-
-// Configure decay model
-let decay = DecayModel::Exponential(0.1);
-
-// Configure threshold progression
-let threshold = ThresholdModel::Linear(0.01, 0.51); // 1% increase per second, starts at 51%
-
-// Configure voting window
-let window = VotingWindow::new(Utc::now(), 120, 30); // 2-min voting, 30-sec grace
-```
+---
 
 ## 🤝 Contributing
 
