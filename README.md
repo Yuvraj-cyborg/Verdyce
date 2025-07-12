@@ -162,25 +162,6 @@ let threshold = ThresholdModel::Linear(0.01, 0.51); // 1% increase per second, s
 let window = VotingWindow::new(Utc::now(), 120, 30); // 2-min voting, 30-sec grace
 ```
 
----
-
-## 🚀 Future Enhancements
-
-- [ ] Web-based dashboard for proposal management
-- [ ] Integration with blockchain networks
-- [ ] Advanced reputation scoring
-- [ ] Multi-signature proposal creation
-- [ ] Delegation and proxy voting
-- [ ] Analytics and reporting features
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
