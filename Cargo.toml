@@ -1,7 +1,11 @@
-[workspace]
-resolver = "3"
-members = [
-    "verdyce-core",
-    "verdyce-cli",
-    "verdyce-chain"
-]
+[package]
+name = "verdyce-core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1.8", features = ["v4", "serde"] }

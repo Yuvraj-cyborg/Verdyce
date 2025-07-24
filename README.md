@@ -1,179 +1,214 @@
-# 🗳️ Verdyce — Time-Decay Threshold Consensus Engine
+# 🗳️ Verdyce Core — Time-Decay Threshold Consensus Engine
 
-![Architecture Diagram](./archi-vote.png)
+A modular Rust library for decentralized voting and governance, built around time-decaying vote weights and escalating approval thresholds. Designed for validator governance, DAOs, and decentralized committees that need time-sensitive and fault-tolerant consensus.
 
-Verdyce is a modular Rust-based system for decentralized voting and governance, built around time-decaying vote weights and escalating approval thresholds. It supports rich configuration, transparent auditing, and CLI interaction backed by Redis.
+## 🏗️ Architecture
 
-Ideal for validator governance, DAOs, or decentralized committees that need time-sensitive and fault-tolerant consensus.
+```mermaid
+flowchart TD
+  A[PROPOSAL CREATED] --> B[Voting Starts t = 0]
+  B --> C[Validators cast votes with timestamps]
+  C --> D[Apply decay + weight floor]
+  D --> E[Engine tallies votes]
+  E --> F{YES weight ≥ threshold?}
+  F -- Yes --> G[Proposal PASSES ✅]
+  F -- No --> H[Proposal FAILS ❌]
+```
 
----
-
-## 🚀 What Makes Verdyce Unique?
+## 🚀 Core Features
 
 ### 🕓 Time-Decay Voting
-- Vote weight decreases as time progresses
-- Encourages early participation
-- Multiple decay models:
-  - **Linear** - Steady decline over time
-  - **Exponential(rate)** - Rapid early decline
-  - **Stepped** - Discrete phase-based weights
+Vote weights decrease over time to encourage early participation:
+- **Linear**: Steady decline from 1.0 to 0.1
+- **Exponential**: Rapid early decline with configurable rate
+- **Stepped**: Discrete weight levels (1.0 → 0.5 → 0.1)
 
-### 📈 Threshold Escalation
-- Approval thresholds increase over time
-- Supports multiple models:
-  - **Linear(rate, start)** - Steady increase
-  - **Exponential(rate, base)** - Rapid early increase
-  - **Sigmoid(rate, floor)** - S-curve progression
-- Ensures quick convergence early, higher scrutiny late
+### 📈 Dynamic Thresholds
+Approval thresholds increase over time for higher scrutiny:
+- **Linear**: `threshold = t × rate + start`
+- **Exponential**: Asymptotic growth with configurable parameters
+- **Sigmoid**: S-curve progression for smooth transitions
 
 ### 🪟 Smart Voting Windows
-- Fixed duration + configurable grace period
-- Auto-extension if:
-  - Nearing threshold
-  - Nearing time expiry
-- Phases: Early, Mid, Late (used for future features)
+- Configurable duration with grace periods
+- Auto-extension when near threshold and time expiry
+- State tracking: NotStarted → Open → Extended → GracePeriod → Expired
 
-### 🔧 CLI Tool with Redis
-- Full proposal lifecycle management via CLI
-- CLI state is stored in Redis for persistence and testability
-- All actions (propose, vote, evaluate) are exposed via commands
+### ⚖️ Revision Penalties
+Vote changes are penalized to discourage manipulation:
+- Weight penalty: `base_weight / (1 + revisions)²`
+- Minimum weight floor of 0.1 ensures all votes count
 
 ---
 
 ## 🧱 Project Structure
 
 ```
-verdyce/
-├── verdyce-core/         # Consensus logic: votes, proposals, decay, etc.
-│   ├── decay/            # Time-decay models
-│   ├── threshold/        # Threshold progression functions
-│   ├── window/           # Voting window state & timing
-│   ├── models/           # Proposal + Vote structs & logic
-│   ├── engine.rs         # Coordinator: evaluates & extends proposals
-│   ├── lib.rs            # Core entrypoint for engine integration
-│   └── tests/            # Unit tests for all modules
-├── verdyce-cli/          # Command-line interface
-│   ├── commands/         # `vote`, `new-proposal`, `evaluate`, etc.
-│   ├── redis.rs          # Redis layer for state persistence
-│   └── main.rs           # CLI entrypoint
-├── verdyce-chain/        # Blockchain integration (future)
-├── README.md             # You're reading it :)
-└── Cargo.toml            # Workspace configuration
+src/
+├── lib.rs              # Library entry point
+├── engine.rs           # Main consensus coordinator
+├── models/             # Core data structures
+│   ├── proposal.rs     # Proposal logic and evaluation
+│   └── vote.rs         # Vote structures and weight calculation
+├── decay/              # Time-decay models
+├── threshold/          # Threshold progression models
+└── window/             # Voting window management
 ```
 
 ---
 
-## 🔧 CLI Usage
+## 🚀 Quick Start
 
-All CLI commands use `verdyce` as the entrypoint binary.
+Add to your `Cargo.toml`:
 
-### 🆕 Create a New Proposal
-
-```bash
-verdyce new-proposal \
-  --title "Test Proposal" \
-  --description "Description of what this proposal is for" \
-  --duration 120
+```toml
+[dependencies]
+verdyce-core = "0.1.0"
 ```
 
-- `--duration` is in seconds
-- Default decay/threshold models are currently pre-configured
+### Basic Usage
 
-### ✅ Cast a Vote
+```rust
+use verdyce_core::{
+    engine::Engine,
+    models::{proposal::Proposal, vote::{Vote, VoteChoice}},
+    decay::DecayModel,
+    threshold::ThresholdModel,
+};
+use uuid::Uuid;
+use chrono::Utc;
 
-```bash
-verdyce vote \
-  --proposal-id <PROPOSAL_UUID> \
-  --validator-id <VALIDATOR_UUID> \
-  --choice yes
+// Create consensus engine
+let mut engine = Engine::new();
+
+// Create a proposal with 1-hour voting period
+let proposal = Proposal::new(
+    "Upgrade Protocol".to_string(),
+    "Proposal to upgrade the protocol to v2.0".to_string(),
+    3600, // 1 hour in seconds
+    DecayModel::Linear,
+    ThresholdModel::Linear(0.0001, 0.5), // Start at 50%, increase slowly
+);
+
+let proposal_id = proposal.id;
+engine.add_proposal(proposal);
+
+// Cast a vote
+let vote = Vote {
+    validator_id: Uuid::new_v4(),
+    choice: VoteChoice::Yes,
+    timestamp: Utc::now(),
+    revision: 0,
+    reason: Some("Looks good to me".to_string()),
+};
+
+engine.cast_vote(proposal_id, vote);
+
+// Evaluate all proposals
+engine.evaluate_all(Utc::now());
+
+// Check results
+if let Some(proposal) = engine.get_proposal(proposal_id) {
+    println!("Proposal status: {:?}", proposal.status);
+    println!("Approval ratio: {:.2}", proposal.current_approval_ratio());
+}
 ```
 
-- `--choice` must be one of: `yes`, `no`, `abstain`
+### Advanced Configuration
 
-### 📊 Evaluate a Proposal
+```rust
+use verdyce_core::{decay::DecayModel, threshold::ThresholdModel};
 
-```bash
-verdyce evaluate --id <PROPOSAL_UUID>
+// Exponential decay (rapid early decline)
+let decay = DecayModel::Exponential(0.001);
+
+// Sigmoid threshold (S-curve progression)
+let threshold = ThresholdModel::Sigmoid(10.0, 0.4);
+
+let proposal = Proposal::new(
+    "Critical Update".to_string(),
+    "Emergency protocol fix".to_string(),
+    1800, // 30 minutes
+    decay,
+    threshold,
+);
 ```
-
-Manually evaluates the proposal:
-- If `approval_ratio ≥ threshold`, mark as **Accepted**
-- If expired without threshold, mark as **Rejected**
 
 ---
 
-## 🧪 Running the Project
+## 🧪 Development
 
 ### Prerequisites
-- **Rust** (stable toolchain)
-- **Redis** (running locally or in Docker)
+- Rust (stable toolchain)
 
-### 🧱 Build
-
-```bash
-cargo build --release
-```
-
-### ✅ Run All Tests
+### Build & Test
 
 ```bash
+# Build the library
+cargo build
+
+# Run all tests
 cargo test
+
+# Run with documentation tests
+cargo test --doc
+
+# Check code quality
+cargo clippy
+
+# Generate documentation
+cargo doc --open
 ```
 
-### 🚀 Redis Setup
-
-Start Redis locally:
+### Running Examples
 
 ```bash
-redis-server
+# Run integration tests
+cargo test --test '*'
+
+# Run specific test module
+cargo test --test vote_test
 ```
-
-Or with Docker:
-
-```bash
-docker run -p 6379:6379 redis
-```
-
-Make sure the Redis instance is running on `localhost:6379`, or update the CLI's config to point to a different host/port.
 
 ---
 
-## 📐 Architecture Summary
+## 📊 Model Comparison
 
-### Proposal Components
-Each proposal contains:
-- **Voting window** with state, duration, phase
-- **Decay model** for vote weight calculation
-- **Threshold model** for approval requirements
-- **List of votes** (each with timestamp, validator, weight)
+### Decay Models
+| Model | Early Weight | Mid Weight | Late Weight | Use Case |
+|-------|-------------|------------|-------------|----------|
+| Linear | 1.0 | 0.5 | 0.1 | Steady participation incentive |
+| Exponential | 1.0 | ~0.4 | 0.1 | Strong early participation bias |
+| Stepped | 1.0 | 0.5 | 0.1 | Clear phase-based incentives |
 
-### Engine Tasks 
-The Engine:
-- Adds proposals to the system
-- Accepts & stores votes
-- Evaluates votes against thresholds
-- Extends windows intelligently if needed
+### Threshold Models
+| Model | Early Threshold | Mid Threshold | Late Threshold | Behavior |
+|-------|----------------|---------------|----------------|----------|
+| Linear | Configurable | Steady increase | High | Predictable progression |
+| Exponential | Low | Rapid increase | Asymptotic | Quick early decisions |
+| Sigmoid | Low | Smooth transition | High | Balanced progression |
 
-### Vote Weight Calculation
-| Model | Description | Behavior |
-|-------|-------------|----------|
-| Linear | Weight drops linearly from 1.0 → 0.1 | Steady decline |
-| Exponential | Drops sharply early on | Front-loaded decay |
-| Stepped | Discrete weight levels across phases | Phase-based weights |
-
-### Threshold Progression
-| Model | Formula | Notes |
-|-------|---------|-------|
-| Linear | `threshold = t * rate + start` | Steady increase |
-| Exponential | `threshold = base + (1 - e^(-rate * t))` | Quick early rise |
-| Sigmoid | S-curve progression | Smooth adaptive ramping |
+---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please ensure:
+
+1. All tests pass: `cargo test`
+2. Code is properly formatted: `cargo fmt`
+3. No clippy warnings: `cargo clippy`
+4. Documentation is updated for public APIs
+
+### Development Workflow
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes with tests
+4. Ensure all checks pass
+5. Submit a pull request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

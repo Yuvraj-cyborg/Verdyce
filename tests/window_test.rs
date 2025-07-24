@@ -1,5 +1,5 @@
+use chrono::{Duration, Utc};
 use verdyce_core::window::{VotingWindow, WindowState};
-use chrono::{Utc, Duration};
 
 #[test]
 fn test_not_started_state() {

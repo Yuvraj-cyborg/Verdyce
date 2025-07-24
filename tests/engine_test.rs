@@ -1,18 +1,18 @@
+use chrono::{Duration, Utc};
+use uuid::Uuid;
+use verdyce_core::decay::DecayModel;
+use verdyce_core::engine::Engine;
 use verdyce_core::models::{
     proposal::{Proposal, ProposalStatus},
     vote::{Vote, VoteChoice},
 };
-use verdyce_core::engine::Engine;
-use verdyce_core::decay::DecayModel;
 use verdyce_core::threshold::ThresholdModel;
-use chrono::{Utc, Duration};
-use uuid::Uuid;
 
 fn sample_proposal() -> Proposal {
     Proposal::new(
         "Test Proposal".into(),
         "Description".into(),
-        60, 
+        60,
         DecayModel::Linear,
         ThresholdModel::Linear(0.5, 0.0),
     )

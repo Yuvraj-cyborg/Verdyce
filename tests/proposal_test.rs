@@ -1,6 +1,6 @@
+use verdyce_core::decay::DecayModel;
 use verdyce_core::models::proposal::*;
 use verdyce_core::models::vote::*;
-use verdyce_core::decay::DecayModel;
 use verdyce_core::threshold::ThresholdModel;
 
 use chrono::{Duration, Utc};
@@ -59,7 +59,6 @@ fn test_proposal_expires_if_not_enough_votes() {
     assert_eq!(proposal.status, ProposalStatus::Expired);
 }
 
-
 #[test]
 fn test_proposal_stays_pending_if_not_enough_yes_yet() {
     let now = Utc::now();
@@ -90,7 +89,7 @@ fn test_extend_when_near_threshold_and_time() {
         ThresholdModel::Linear(0.0, 0.6),
     );
 
-    proposal.voting_window.start_time = now - Duration::seconds(91); 
+    proposal.voting_window.start_time = now - Duration::seconds(91);
     proposal.add_vote(Vote {
         validator_id: Uuid::new_v4(),
         choice: VoteChoice::Yes,
