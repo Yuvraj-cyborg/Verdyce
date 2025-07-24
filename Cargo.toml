@@ -1,6 +1,6 @@
 [package]
 name = "verdyce"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["Yuvraj Biswal yuvrajbiswalofficial@gmail.com"]
 description = "A time-decay threshold consensus engine for decentralized voting and governance with configurable decay models and dynamic thresholds."
